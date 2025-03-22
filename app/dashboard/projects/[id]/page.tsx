@@ -4,7 +4,7 @@ import NDVIViewer from "@/components/dashboard/ndvi-viewer"
 import AIInsights from "@/components/dashboard/ai-insights"
 import ProjectTimeline from "@/components/dashboard/project-timeline"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Download, Share2 } from "lucide-react"
+import { ArrowLeft, Download, FileImage, Share2 } from "lucide-react"
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -34,6 +34,12 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
           </div>
         </div>
         <div className="flex space-x-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/projects/${params.id}/add-images`}>
+              <FileImage className="mr-2 h-4 w-4" />
+              Add Images
+            </Link>
+          </Button>
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Export
