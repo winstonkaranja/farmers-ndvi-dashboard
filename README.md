@@ -82,12 +82,12 @@ To test the application locally before deployment:
 
 #### 4.2 Backend (FAstAPI)
 1. Navigate to the backend directory:
-    \`\`\`bash
+    \`\`\`
    npm run dev
    \`\`\`
    
 3. Run the FastAPI application using uvicorn:
-   \`\`\`bash
+   \`\`\`
    uvicorn main:app --reload
    \`\`\`
 5. Your FastAPI backend will be running at [http://localhost:8000](http://localhost:8000)
