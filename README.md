@@ -81,11 +81,16 @@ To test the application locally before deployment:
 4. Verify that the application is running correctly
 
 #### 4.2 Backend (FAstAPI)
-1. Navigate to the backend directory
-   cd backend
-2. Run the FastAPI application using uvicorn:
+1. Navigate to the backend directory:
+    \`\`\`bash
+   npm run dev
+   \`\`\`
+   
+3. Run the FastAPI application using uvicorn:
+   \`\`\`bash
    uvicorn main:app --reload
-3. Your FastAPI backend will be running at [http://localhost:8000](http://localhost:8000)
+   \`\`\`
+5. Your FastAPI backend will be running at [http://localhost:8000](http://localhost:8000)
    
 ### Step 5: Build for Production
 
