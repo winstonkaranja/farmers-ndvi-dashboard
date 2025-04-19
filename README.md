@@ -66,6 +66,7 @@ code .
 
 To test the application locally before deployment:
 
+#### 4.1 Frontend
 1. In the VS Code terminal, run one of the following commands:
 
    \`\`\`bash
@@ -77,8 +78,15 @@ To test the application locally before deployment:
    \`\`\`
 
 2. Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
-3. Verify that the application is running correctly
+4. Verify that the application is running correctly
 
+#### 4.2 Backend (FAstAPI)
+1. Navigate to the backend directory
+   cd backend
+2. Run the FastAPI application using uvicorn:
+   uvicorn main:app --reload
+3. Your FastAPI backend will be running at [http://localhost:8000](http://localhost:8000)
+   
 ### Step 5: Build for Production
 
 Before deploying, you need to create a production build:
