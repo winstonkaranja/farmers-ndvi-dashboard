@@ -1,16 +1,35 @@
-import type { Metadata } from "next"
+"use client"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import DashboardShell from "@/components/dashboard/dashboard-shell"
 import UploadArea from "@/components/dashboard/upload-area"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
-export const metadata: Metadata = {
-  title: "New Project | Farmers NDVI",
-  description: "Create a new NDVI analysis project",
-}
-
 export default function NewProjectPage() {
+  const [name, setName] = useState("")
+  const [fieldLocation, setFieldLocation] = useState("")
+  const [description, setDescription] = useState("")
+  const router = useRouter()
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
+
+  const handleCreateProject = async () => {
+    const response = await fetch("http://localhost:8000/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, location: fieldLocation, description }),
+    })
+  
+    if (response.ok) {
+      const project = await response.json()
+      setCreatedProjectId(project.id)
+      // optionally keep user on this page for uploads
+    } else {
+      alert("Failed to create project")
+    }
+  }
+
   return (
     <DashboardShell>
       <div className="flex items-center mb-8">
@@ -24,35 +43,36 @@ export default function NewProjectPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Project Details */}
         <div className="bg-card rounded-lg p-6 border border-border">
           <h2 className="text-xl font-semibold mb-4">Project Details</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Project Name
-              </label>
+              <label htmlFor="name" className="text-sm font-medium">Project Name</label>
               <input
                 id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="w-full px-3 py-2 bg-background border border-input rounded-md"
                 placeholder="Enter project name"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="field" className="text-sm font-medium">
-                Field Location
-              </label>
+              <label htmlFor="field" className="text-sm font-medium">Field Location</label>
               <input
                 id="field"
+                value={fieldLocation}
+                onChange={(e) => setFieldLocation(e.target.value)}
                 className="w-full px-3 py-2 bg-background border border-input rounded-md"
                 placeholder="Enter field location"
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label htmlFor="description" className="text-sm font-medium">
-                Description
-              </label>
+              <label htmlFor="description" className="text-sm font-medium">Description</label>
               <textarea
                 id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-3 py-2 bg-background border border-input rounded-md h-24"
                 placeholder="Enter project description"
               />
@@ -60,16 +80,31 @@ export default function NewProjectPage() {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg p-6 border border-border">
-          <h2 className="text-xl font-semibold mb-4">Upload TIFF Files</h2>
-          <UploadArea />
-        </div>
+        {/* UploadArea shows only after project is created */}
+        {createdProjectId && (
+          <div className="bg-card rounded-lg p-6 border border-border">
+            <h2 className="text-xl font-semibold mb-4">Upload TIFF Files</h2>
+            <UploadArea
+              projectId={createdProjectId}
+              onUploadComplete={() => {
+                router.push(`/dashboard/projects/${createdProjectId}`)
+              }}
+            />
+          </div>
+        )}
 
-        <div className="flex justify-end">
-          <Button className="bg-[#4f531f] hover:bg-[#3a3d17] text-white">Create Project</Button>
-        </div>
+        {/* Create Project Button */}
+        {!createdProjectId && (
+          <div className="flex justify-end">
+            <Button
+              className="bg-[#4f531f] hover:bg-[#3a3d17] text-white"
+              onClick={handleCreateProject}
+            >
+              Create Project
+            </Button>
+          </div>
+        )}
       </div>
     </DashboardShell>
   )
 }
-

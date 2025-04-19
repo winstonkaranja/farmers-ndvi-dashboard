@@ -1,3 +1,5 @@
+// app/dashboard/projects/[id]/add-images/page.tsx
+
 import type { Metadata } from "next"
 import DashboardShell from "@/components/dashboard/dashboard-shell"
 import { Button } from "@/components/ui/button"
@@ -11,25 +13,23 @@ export const metadata: Metadata = {
 }
 
 export default function AddProjectImagesPage({ params }: { params: { id: string } }) {
-  // In a real app, we would fetch project data based on the ID
-  const projectName = "North Field Analysis"
+  const projectId = params.id
 
   return (
     <DashboardShell>
       <div className="flex items-center mb-8">
         <Button variant="ghost" size="sm" asChild className="mr-4">
-          <Link href={`/dashboard/projects/${params.id}`}>
+          <Link href={`/dashboard/projects/${projectId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Project
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Add Images to {projectName}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Add Images to Project #{projectId}</h1>
       </div>
 
       <div className="space-y-6">
-        <AddProjectImages projectId={params.id} />
+        <AddProjectImages projectId={projectId} />
       </div>
     </DashboardShell>
   )
 }
-

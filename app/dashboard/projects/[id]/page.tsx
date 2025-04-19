@@ -1,4 +1,6 @@
-import type { Metadata } from "next"
+// app/dashboard/projects/[id]/page.tsx
+export const dynamic = 'force-dynamic'
+
 import DashboardShell from "@/components/dashboard/dashboard-shell"
 import NDVIViewer from "@/components/dashboard/ndvi-viewer"
 import AIInsights from "@/components/dashboard/ai-insights"
@@ -8,15 +10,28 @@ import { ArrowLeft, Download, FileImage, Share2 } from "lucide-react"
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "Project Details | Farmers NDVI",
   description: "View and analyze your NDVI project",
 }
 
-export default function ProjectPage({ params }: { params: { id: string } }) {
-  // In a real app, we would fetch project data based on the ID
-  const projectName = "North Field Analysis"
-  const projectDate = "March 15, 2025"
+export default async function ProjectPage({ params: { id } }: { params: { id: string } }) {
+  const projectId = id
+
+
+  const res = await fetch(`http://localhost:8000/projects/${projectId}`, {
+    next: { revalidate: 10 },
+  })
+
+  if (!res.ok) {
+    return (
+      <DashboardShell>
+        <h1 className="text-2xl font-bold">Project not found</h1>
+      </DashboardShell>
+    )
+  }
+
+  const project = await res.json()
 
   return (
     <DashboardShell>
@@ -29,24 +44,18 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{projectName}</h1>
-            <p className="text-muted-foreground">Created on {projectDate}</p>
+            <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
+            <p className="text-muted-foreground">
+              Created on {new Date(project.created_at).toLocaleDateString()}
+            </p>
           </div>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/projects/${params.id}/add-images`}>
+            <Link href={`/dashboard/projects/${projectId}/add-images`}>
               <FileImage className="mr-2 h-4 w-4" />
               Add Images
             </Link>
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button variant="outline" size="sm">
-            <Share2 className="mr-2 h-4 w-4" />
-            Share
           </Button>
         </div>
       </div>
@@ -59,18 +68,15 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
         </TabsList>
 
         <TabsContent value="visualization" className="space-y-6">
-          <NDVIViewer projectId={params.id} />
+          <NDVIViewer projectId={projectId} />
         </TabsContent>
-
-        <TabsContent value="insights" className="space-y-6">
-          <AIInsights projectId={params.id} />
+        <TabsContent value="insights">
+          <AIInsights projectId={projectId} />
         </TabsContent>
-
-        <TabsContent value="history" className="space-y-6">
-          <ProjectTimeline projectId={params.id} />
+        <TabsContent value="history">
+          <ProjectTimeline projectId={projectId} />
         </TabsContent>
       </Tabs>
     </DashboardShell>
   )
 }
-

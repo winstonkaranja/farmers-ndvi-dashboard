@@ -1,6 +1,8 @@
 "use client"
 
 import type React from "react"
+import axios from "axios"
+import { useEffect } from "react"
 
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -26,27 +28,30 @@ export default function AddProjectImages({ projectId }: AddProjectImagesProps) {
   const [uploadComplete, setUploadComplete] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Mock existing project images for demonstration
-  const existingImages = [
-    {
-      id: "1",
-      date: "March 15, 2025",
-      filename: "north_field_march15.tiff",
-      size: "12.4 MB",
-    },
-    {
-      id: "2",
-      date: "March 8, 2025",
-      filename: "north_field_march8.tiff",
-      size: "11.8 MB",
-    },
-    {
-      id: "3",
-      date: "March 1, 2025",
-      filename: "north_field_march1.tiff",
-      size: "12.1 MB",
-    },
-  ]
+  
+  interface ProjectImage {
+    id: string
+    filename: string
+    s3_url: string
+    upload_time: string
+  }
+  
+  const [existingImages, setExistingImages] = useState<ProjectImage[]>([])
+  
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/project-images/")
+        const data = await response.json()
+        setExistingImages(data)
+      } catch (err) {
+        console.error("Error fetching images:", err)
+      }
+    }
+  
+    fetchImages()
+  }, [])
+  
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -89,40 +94,46 @@ export default function AddProjectImages({ projectId }: AddProjectImagesProps) {
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleUpload = () => {
-    if (files.length === 0) return
-
+  
+  const handleUpload = async () => {
+    if (files.length === 0) return;
+  
     setUploading(true)
     setUploadProgress(0)
-
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setUploading(false)
-          setProcessing(true)
-          setProcessProgress(0)
-
-          // Simulate NDVI processing
-          const processInterval = setInterval(() => {
-            setProcessProgress((prev) => {
-              if (prev >= 100) {
-                clearInterval(processInterval)
-                setProcessing(false)
-                setUploadComplete(true)
-                return 100
-              }
-              return prev + 5
-            })
-          }, 200)
-
-          return 100
-        }
-        return prev + 5
+    setUploadError(null)
+  
+    try {
+      const formData = new FormData()
+      formData.append("file", files[0]) // For now, support only one at a time
+  
+      const response = await fetch("http://127.0.0.1:8000/ndvi-process", {
+        method: "POST",
+        body: formData,
       })
-    }, 200)
+  
+      if (!response.ok) throw new Error("Upload failed")
+  
+      const data = await response.json()
+      console.log("NDVI result:", data)
+  
+      // Show success status
+      setUploadProgress(100)
+      setUploading(false)
+      setProcessing(true)
+  
+      // Simulate short NDVI processing time for UI transition
+      setTimeout(() => {
+        setProcessing(false)
+        setUploadComplete(true)
+      }, 1500)
+  
+    } catch (err) {
+      console.error(err)
+      setUploadError("NDVI processing failed. Please try again.")
+      setUploading(false)
+    }
   }
+  
 
   const handleComplete = () => {
     router.push(`/dashboard/projects/${projectId}`)
@@ -142,7 +153,7 @@ export default function AddProjectImages({ projectId }: AddProjectImagesProps) {
                 <div className="flex items-center">
                   <FileImage className="h-5 w-5 mr-3 text-[#efc87d]" />
                   <div>
-                    <p className="text-sm font-medium">{image.filename}</p>
+                  <span>{new Date(image.upload_time).toLocaleDateString()}</span>
                     <div className="flex items-center text-xs text-muted-foreground">
                       <Calendar className="h-3 w-3 mr-1" />
                       <span>{image.date}</span>

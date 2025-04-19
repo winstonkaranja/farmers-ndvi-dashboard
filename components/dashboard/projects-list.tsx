@@ -1,59 +1,72 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowUpDown, Calendar, FileImage, MoreHorizontal, Search } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  ArrowUpDown,
+  Calendar,
+  FileImage,
+  MoreHorizontal,
+  Search,
+} from "lucide-react"
 import Link from "next/link"
 
-export default function ProjectsList() {
-  const [searchQuery, setSearchQuery] = useState("")
+interface Project {
+  id: string
+  name: string
+  description: string
+  location: string
+  created_at: string
+  status?: string // Optional if backend doesn’t send it
+  imageCount?: number
+}
 
-  // In a real app, we would fetch the projects from an API
-  const projects = [
-    {
-      id: "1",
-      name: "North Field Analysis",
-      date: "March 15, 2025",
-      status: "Active",
-      imageCount: 3,
-    },
-    {
-      id: "2",
-      name: "South Field Monitoring",
-      date: "March 10, 2025",
-      status: "Active",
-      imageCount: 2,
-    },
-    {
-      id: "3",
-      name: "East Field Assessment",
-      date: "March 5, 2025",
-      status: "Completed",
-      imageCount: 1,
-    },
-    {
-      id: "4",
-      name: "West Field Survey",
-      date: "February 28, 2025",
-      status: "Archived",
-      imageCount: 4,
-    },
-    {
-      id: "5",
-      name: "Central Field Evaluation",
-      date: "February 20, 2025",
-      status: "Completed",
-      imageCount: 2,
-    },
-  ]
+export default function ProjectsList() {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch("http://localhost:8000/projects")
+        const data = await res.json()
+        const enriched = data.map((project: any) => ({
+          ...project,
+          status: "Active", // You can adjust logic here if needed
+          imageCount: project.ndvi_results?.length || 0,
+        }))
+        setProjects(enriched)
+      } catch (error) {
+        console.error("Failed to fetch projects:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProjects()
+  }, [])
 
   const filteredProjects = projects.filter(
     (project) =>
       project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.status.toLowerCase().includes(searchQuery.toLowerCase()),
+      (project.status?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   )
 
   return (
@@ -84,71 +97,87 @@ export default function ProjectsList() {
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
-              <TableHead>
-                <Button variant="ghost" className="p-0 font-medium">
-                  Date
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
+              <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Files</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProjects.map((project) => (
-              <TableRow key={project.id}>
-                <TableCell className="font-medium">
-                  <Link href={`/dashboard/projects/${project.id}`} className="hover:underline">
-                    {project.name}
-                  </Link>
-                </TableCell>
-                <TableCell>{project.date}</TableCell>
-                <TableCell>
-                  <div
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      project.status === "Active"
-                        ? "bg-green-500/20 text-green-500"
-                        : project.status === "Completed"
-                          ? "bg-blue-500/20 text-blue-500"
-                          : "bg-gray-500/20 text-gray-500"
-                    }`}
-                  >
-                    {project.status}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <FileImage className="mr-1 h-4 w-4 text-muted-foreground" />
-                    <span>{project.imageCount}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Link href={`/dashboard/projects/${project.id}`} className="w-full">
-                          View Project
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>Edit Project</DropdownMenuItem>
-                      <DropdownMenuItem>Duplicate Project</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">Delete Project</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center">
+                  Loading projects...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : filteredProjects.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center">
+                  No projects found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredProjects.map((project) => (
+                <TableRow key={project.id}>
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`/dashboard/projects/${project.id}`}
+                      className="hover:underline"
+                    >
+                      {project.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(project.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <div
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        project.status === "Active"
+                          ? "bg-green-500/20 text-green-500"
+                          : "bg-gray-500/20 text-gray-500"
+                      }`}
+                    >
+                      {project.status || "Unknown"}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <FileImage className="mr-1 h-4 w-4 text-muted-foreground" />
+                      <span>{project.imageCount || 0}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Link
+                            href={`/dashboard/projects/${project.id}`}
+                            className="w-full"
+                          >
+                            View Project
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>Edit Project</DropdownMenuItem>
+                        <DropdownMenuItem>Duplicate Project</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">
+                          Delete Project
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
     </div>
   )
 }
-

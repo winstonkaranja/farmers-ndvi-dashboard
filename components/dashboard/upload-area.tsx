@@ -1,14 +1,20 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Upload, X, FileImage, Check, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import axios from "axios"
 
-export default function UploadArea() {
+export default function UploadArea({
+    projectId,
+    onUploadComplete,
+  }: {
+    projectId: string
+    onUploadComplete?: () => void
+}) {
   const [isDragging, setIsDragging] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
@@ -41,7 +47,6 @@ export default function UploadArea() {
   }
 
   const handleFiles = (newFiles: File[]) => {
-    // Filter for TIFF files
     const tiffFiles = newFiles.filter((file) => file.name.endsWith(".tif") || file.name.endsWith(".tiff"))
 
     if (tiffFiles.length !== newFiles.length) {
@@ -57,24 +62,55 @@ export default function UploadArea() {
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (files.length === 0) return
 
     setUploading(true)
     setUploadProgress(0)
+    setUploadError(null)
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setUploading(false)
-          return 100
+    const formData = new FormData()
+    files.forEach((file) => {
+      formData.append("files", file) // Adjust key if backend uses different field
+    })
+
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:8000/projects/${projectId}/ndvi-process`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
+            setUploadProgress(percentCompleted)
+          },
         }
-        return prev + 5
-      })
-    }, 200)
+      )
+
+      console.log("Upload successful:", response.data)
+      setUploadProgress(100)
+      // Redirect after successful upload
+      if (onUploadComplete) {
+        onUploadComplete()
+      }
+    } catch (error: any) {
+      console.error("Upload error:", error)
+      setUploadError("Upload failed. Please try again.")
+    } finally {
+      setUploading(false)
+    }
   }
+
+  if (!projectId) {
+    return (
+      <div className="text-sm text-muted-foreground italic">
+        Please create a project before uploading images.
+      </div>
+    )
+  }
+  
 
   return (
     <div className="space-y-4">
@@ -186,4 +222,3 @@ export default function UploadArea() {
     </div>
   )
 }
-
