@@ -1,17 +1,20 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
-from file_upload import get_db
-from models import UploadedFile, NDVIResult, Project
+from backend.file_upload import get_db
+from backend.models import UploadedFile, NDVIResult, Project
 import os
 from uuid import uuid4
-from ndvi_processor import process_ndvi_pipeline
-from s3_utils import upload_to_s3
+from backend.ndvi_processor import process_ndvi_pipeline, simple_tiff_to_jpeg
+from backend.s3_utils import upload_to_s3
 from geoalchemy2.shape import from_shape
 from shapely.geometry import box
 import rasterio
 from typing import List
-from schemas import ProjectCreate, ProjectRead
+from backend.schemas import ProjectCreate, ProjectRead
 from datetime import datetime
+from opencage.geocoder import OpenCageGeocode
+# from recommendation.recommendation import advisor_graph
+# from recommendation.nodes import State
 
 
 router = APIRouter()
@@ -69,6 +72,15 @@ async def process_ndvi(
             ndvi_path = ndvi_result["ndvi_path"]
             stats = ndvi_result["stats"]
             bounds = ndvi_result["extent"]
+            
+            # --- Convert TIFF to JPEG ---
+            jpeg_preview_path = f"preview_{uuid4().hex}.jpg"
+            simple_tiff_to_jpeg(temp_filename, jpeg_preview_path)
+
+            # Upload JPEG preview to S3
+            jpeg_s3_filename = f"previews/{datetime.utcnow().isoformat()}_{file.filename.replace('.tif', '.jpg').replace('.tiff', '.jpg')}"
+            jpeg_s3_url = upload_to_s3(jpeg_preview_path, jpeg_s3_filename)
+
 
             # Upload NDVI result to S3
             s3_filename = f"ndvi_results/{datetime.utcnow().isoformat()}_{file.filename}"
@@ -86,7 +98,7 @@ async def process_ndvi(
             result = NDVIResult(
                 filename=file.filename,
                 s3_url=s3_url,
-                original_url=original_s3_url,
+                original_url=jpeg_s3_url,
                 ndvi_min=stats["min"],
                 ndvi_max=stats["max"],
                 ndvi_mean=stats["mean"],
@@ -195,5 +207,34 @@ def list_projects(db: Session = Depends(get_db)):
         }
         for p in projects
     ]
+    
+
+@router.get("/geocode")
+def get_coordinates(location: str):
+    try:
+        api_key = os.getenv("OPENCAGE_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="OpenCage API key not configured")
+
+        geocoder = OpenCageGeocode(api_key)
+        results = geocoder.geocode(location)
+
+        if results and len(results) > 0:
+            lat = results[0]['geometry']['lat']
+            lng = results[0]['geometry']['lng']
+            return {"latitude": lat, "longitude": lng}
+        else:
+            return {"latitude": None, "longitude": None}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
+# @router.post("/ai-insights")
+# async def run_ai_insights(payload: dict):
+#     try:
+#         input_state = State(**payload)
+#         result = advisor_graph.invoke(input_state)
+#         return result
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))

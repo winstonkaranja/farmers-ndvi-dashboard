@@ -2,7 +2,7 @@ from sqlalchemy import Column, Float, Integer, String, DateTime, ForeignKey
 from geoalchemy2 import Geometry
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from database import Base
+from backend.database import Base
 from datetime import datetime
 
 
@@ -22,6 +22,8 @@ class Project(Base):
     name = Column(String)
     location = Column(String)
     description = Column(String)
+    latitude = Column(Float) 
+    longitude = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
     ndvi_results = relationship("NDVIResult", back_populates="project")
 

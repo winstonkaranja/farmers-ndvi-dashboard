@@ -47,15 +47,21 @@ export default function UploadArea({
   }
 
   const handleFiles = (newFiles: File[]) => {
-    const tiffFiles = newFiles.filter((file) => file.name.endsWith(".tif") || file.name.endsWith(".tiff"))
-
-    if (tiffFiles.length !== newFiles.length) {
-      setUploadError("Only TIFF files are supported")
+    const supportedFiles = newFiles.filter((file) =>
+      file.name.endsWith(".tif") ||
+      file.name.endsWith(".tiff") ||
+      file.name.endsWith(".jpg") ||
+      file.name.endsWith(".JPG") ||
+      file.name.endsWith(".jpeg")
+    )
+    
+    if (supportedFiles.length !== newFiles.length) {
+      setUploadError("Only TIFF and JPEG files are supported")
     } else {
       setUploadError(null)
     }
-
-    setFiles((prev) => [...prev, ...tiffFiles])
+    
+    setFiles((prev) => [...prev, ...supportedFiles])    
   }
 
   const removeFile = (index: number) => {
@@ -71,7 +77,7 @@ export default function UploadArea({
 
     const formData = new FormData()
     files.forEach((file) => {
-      formData.append("files", file) // Adjust key if backend uses different field
+      formData.append("files", file) 
     })
 
     try {
@@ -135,12 +141,12 @@ export default function UploadArea({
           <div className="rounded-full bg-[#4f531f]/20 p-3 mb-4">
             <Upload className="h-6 w-6 text-[#4f531f]" />
           </div>
-          <h3 className="text-lg font-semibold mb-2">Drag & Drop TIFF Files</h3>
+          <h3 className="text-lg font-semibold mb-2">Drag & Drop Files</h3>
           <p className="text-sm text-muted-foreground mb-4">Or click to browse from your computer</p>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".tif,.tiff"
+            accept=".tif,.tiff,.jpg,.jpeg, .JPG"
             multiple
             className="hidden"
             onChange={handleFileChange}

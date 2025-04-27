@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from file_upload import get_db
-from models import UploadedFile  # or ImageMetadata depending on your table
+from backend.file_upload import get_db
+from backend.models import UploadedFile  # or ImageMetadata depending on your table
 
 router = APIRouter()
 

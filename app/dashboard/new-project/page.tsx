@@ -14,21 +14,46 @@ export default function NewProjectPage() {
   const router = useRouter()
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
 
+  const fetchCoordinates = async (location: string) => {
+    const res = await fetch(`http://localhost:8000/geocode?location=${encodeURIComponent(location)}`);
+    const data = await res.json();
+  
+    if (data && data.latitude && data.longitude) {
+      return { latitude: data.latitude, longitude: data.longitude };
+    }
+  
+    console.error("Failed to fetch coordinates for:", location);
+    return null;
+  };  
+
   const handleCreateProject = async () => {
+    const coords = await fetchCoordinates(fieldLocation)
+  
+    if (!coords) {
+      alert("Could not fetch coordinates for the location")
+      return
+    }
+  
     const response = await fetch("http://localhost:8000/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, location: fieldLocation, description }),
+      body: JSON.stringify({
+        name,
+        location: fieldLocation,
+        description,
+        latitude: coords.latitude,
+        longitude: coords.longitude
+      }),
     })
   
     if (response.ok) {
       const project = await response.json()
       setCreatedProjectId(project.id)
-      // optionally keep user on this page for uploads
     } else {
       alert("Failed to create project")
     }
   }
+  
 
   return (
     <DashboardShell>

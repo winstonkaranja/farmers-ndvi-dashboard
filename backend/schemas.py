@@ -11,11 +11,13 @@ class ProjectCreate(BaseModel):
     name: str
     location: str
     description: str
+    latitude: float
+    longitude: float
 
 
 class ProjectRead(ProjectCreate):
     id: int
-    created_at: datetime  # If your model includes a timestamp
+    created_at: datetime  
 
     class Config:
         orm_mode = True

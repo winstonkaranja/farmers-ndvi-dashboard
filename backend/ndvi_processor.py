@@ -5,6 +5,8 @@ from rasterio.transform import from_origin
 from skimage.filters import gaussian
 from shapely.geometry import box
 import traceback
+from PIL import Image
+import tifffile as tiff
 
 
 def read_multispectral_image(image_path):
@@ -85,5 +87,46 @@ def process_ndvi_pipeline(ref_image_path, target_image_path, nir_band_index, red
         traceback.print_exc()
         raise e  
     
-    
+def simple_tiff_to_jpeg(tiff_path, jpeg_path):
+    """Safely convert complex TIFF to JPEG using tifffile + PIL."""
+    # Read using tifffile
+    img_array = tiff.imread(tiff_path)
 
+    # Handle single-channel or multi-band TIFFs
+    if img_array.ndim == 2:
+        # Single-band (grayscale), duplicate into 3 channels
+        img_array = np.stack([img_array]*3, axis=-1)
+    elif img_array.shape[0] in [1, 3, 4]:  
+        # (bands, H, W) → (H, W, bands)
+        img_array = np.transpose(img_array, (1, 2, 0))
+
+    # Normalize for display if needed
+    if img_array.dtype != np.uint8:
+        img_array = ((img_array - np.min(img_array)) / (np.max(img_array) - np.min(img_array)) * 255).astype(np.uint8)
+
+    # Convert to PIL Image
+    img = Image.fromarray(img_array[..., :3])  # Use first 3 bands
+
+    img.save(jpeg_path, "JPEG", quality=95)
+
+    
+# def convert_to_rgb_jpeg(tif_path, output_jpeg_path, red_band=3, green_band=2, blue_band=1):
+#     with rasterio.open(tif_path) as src:
+#         # Read bands
+#         red = src.read(red_band + 1)
+#         green = src.read(green_band + 1)
+#         blue = src.read(blue_band + 1)
+
+#         # Normalize to 0-255
+#         def normalize(band):
+#             band = band.astype(np.float32)
+#             band_min, band_max = np.percentile(band, (2, 98))  # Robust stretching
+#             band = (band - band_min) / (band_max - band_min)
+#             band = np.clip(band * 255, 0, 255).astype(np.uint8)
+#             return band
+
+#         rgb = np.stack([normalize(red), normalize(green), normalize(blue)], axis=-1)
+
+#         # Save as JPEG
+#         img = Image.fromarray(rgb)
+#         img.save(output_jpeg_path)
