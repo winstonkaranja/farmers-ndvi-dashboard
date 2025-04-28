@@ -7,18 +7,18 @@
 //   description: "Stitch multiple TIFF images for large fields",
 // }
 
-export default function ImageStitchingPage() {
-  return (
-    <DashboardShell>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Image Stitching</h1>
-          <p className="text-muted-foreground">Combine multiple TIFF images into a single comprehensive view</p>
-        </div>
-      </div>
+// export default function ImageStitchingPage() {
+//   return (
+//     <DashboardShell>
+//       <div className="flex items-center justify-between mb-6">
+//         <div>
+//           <h1 className="text-3xl font-bold tracking-tight">Image Stitching</h1>
+//           <p className="text-muted-foreground">Combine multiple TIFF images into a single comprehensive view</p>
+//         </div>
+//       </div>
 
-      <ImageStitchingTool />
-    </DashboardShell>
-  )
-}
+//       <ImageStitchingTool />
+//     </DashboardShell>
+//   )
+// }
 
