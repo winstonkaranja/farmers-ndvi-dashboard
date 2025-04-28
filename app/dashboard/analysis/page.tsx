@@ -1,7 +1,7 @@
-'use client'
+// "use client";
 
-import DashboardShell from "@/components/dashboard/dashboard-shell"
-import DynamicNDVIAnalysis from "@/components/dashboard/dynamic-ndvi-analysis"
+// import DashboardShell from "@/components/dashboard/dashboard-shell"
+// import DynamicNDVIAnalysis from "@/components/dashboard/dynamic-ndvi-analysis"
 
 export default function AnalysisPage() {
   return (

@@ -1,11 +1,11 @@
-import type { Metadata } from "next"
-import DashboardShell from "@/components/dashboard/dashboard-shell"
-import ImageStitchingTool from "@/components/dashboard/image-stitching-tool"
+// import type { Metadata } from "next"
+// import DashboardShell from "@/components/dashboard/dashboard-shell"
+// import ImageStitchingTool from "@/components/dashboard/image-stitching-tool"
 
-export const metadata: Metadata = {
-  title: "Image Stitching | Farmers NDVI",
-  description: "Stitch multiple TIFF images for large fields",
-}
+// export const metadata: Metadata = {
+//   title: "Image Stitching | Farmers NDVI",
+//   description: "Stitch multiple TIFF images for large fields",
+// }
 
 export default function ImageStitchingPage() {
   return (
