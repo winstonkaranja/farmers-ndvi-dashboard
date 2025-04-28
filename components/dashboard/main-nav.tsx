@@ -16,10 +16,10 @@ export function MainNav() {
       name: "Projects",
       href: "/dashboard/projects",
     },
-    {
-      name: "Analysis",
-      href: "/dashboard/analysis",
-    },
+    // {
+    //   name: "Analysis",
+    //   href: "/dashboard/analysis",
+    // },
   ]
 
   return (
