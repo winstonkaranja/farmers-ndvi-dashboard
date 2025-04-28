@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -67,61 +67,7 @@ export default function DynamicNDVIAnalysis() {
     fetchNDVIData()
   }, [])
 
-  // const currentImage = ndviImages[currentImageIndex]
   
-  // Mock NDVI images for demonstration
-  // const [ndviImages, setNdviImages] = useState<
-  //   Array<{
-  //     id: string
-  //     date: string
-  //     url: string
-  //     thumbnail: string
-  //     ndviMin: number
-  //     ndviMax: number
-  //     ndviMean: number
-  //     healthyPercentage: number
-  //     stressedPercentage: number
-  //     unhealthyPercentage: number
-  //   }>
-  // >([
-  //   {
-  //     id: "1",
-  //     date: "March 15, 2025",
-  //     url: "/placeholder.svg?height=600&width=800&text=NDVI+March+15",
-  //     thumbnail: "/placeholder.svg?height=80&width=80&text=Mar+15",
-  //     ndviMin: -0.2,
-  //     ndviMax: 0.8,
-  //     ndviMean: 0.45,
-  //     healthyPercentage: 65,
-  //     stressedPercentage: 25,
-  //     unhealthyPercentage: 10,
-  //   },
-  //   {
-  //     id: "2",
-  //     date: "March 8, 2025",
-  //     url: "/placeholder.svg?height=600&width=800&text=NDVI+March+8",
-  //     thumbnail: "/placeholder.svg?height=80&width=80&text=Mar+8",
-  //     ndviMin: -0.15,
-  //     ndviMax: 0.75,
-  //     ndviMean: 0.42,
-  //     healthyPercentage: 60,
-  //     stressedPercentage: 30,
-  //     unhealthyPercentage: 10,
-  //   },
-  //   {
-  //     id: "3",
-  //     date: "March 1, 2025",
-  //     url: "/placeholder.svg?height=600&width=800&text=NDVI+March+1",
-  //     thumbnail: "/placeholder.svg?height=80&width=80&text=Mar+1",
-  //     ndviMin: -0.25,
-  //     ndviMax: 0.7,
-  //     ndviMean: 0.38,
-  //     healthyPercentage: 55,
-  //     stressedPercentage: 30,
-  //     unhealthyPercentage: 15,
-  //   },
-  // ])
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
