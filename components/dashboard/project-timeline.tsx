@@ -34,7 +34,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
       id: 3,
       date: "March 8, 2025",
       title: "Irrigation Adjustment",
-      description: "Increased irrigation in eastern section by 15%",
+      desription: "Increased irrigation in eastern section by 15%",
       files: ["irrigation_adjustment.tiff"],
       expanded: false,
     },

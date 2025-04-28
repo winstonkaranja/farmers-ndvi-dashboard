@@ -27,24 +27,24 @@ export function DashboardSidebar({ open, onOpenChange }: DashboardSidebarProps) 
       href: "/dashboard/projects",
       active: pathname === "/dashboard/projects" || pathname.startsWith("/dashboard/projects/"),
     },
-    // {
-    //   label: "NDVI Analysis",
-    //   icon: Calculator,
-    //   href: "/dashboard/analysis",
-    //   active: pathname === "/dashboard/analysis",
-    // },
-    // {
-    //   label: "Image Stitching",
-    //   icon: Grid,
-    //   href: "/dashboard/image-stitching",
-    //   active: pathname === "/dashboard/image-stitching",
-    // },
-    // {
-    //   label: "Field Images",
-    //   icon: FileImage,
-    //   href: "/dashboard/images",
-    //   active: pathname === "/dashboard/images",
-    // },
+    {
+      label: "NDVI Analysis",
+      icon: Calculator,
+      href: "/dashboard/analysis",
+      active: pathname === "/dashboard/analysis",
+    },
+    {
+      label: "Image Stitching",
+      icon: Grid,
+      href: "/dashboard/image-stitching",
+      active: pathname === "/dashboard/image-stitching",
+    },
+    {
+      label: "Field Images",
+      icon: FileImage,
+      href: "/dashboard/images",
+      active: pathname === "/dashboard/images",
+    },
     {
       label: "Settings",
       icon: Settings,
