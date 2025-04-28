@@ -67,7 +67,7 @@ export default function DynamicNDVIAnalysis() {
     fetchNDVIData()
   }, [])
 
-  const currentImage = ndviImages[currentImageIndex]
+  // const currentImage = ndviImages[currentImageIndex]
   
   // Mock NDVI images for demonstration
   // const [ndviImages, setNdviImages] = useState<
