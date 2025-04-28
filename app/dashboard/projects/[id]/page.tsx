@@ -6,9 +6,24 @@ import NDVIViewer from "@/components/dashboard/ndvi-viewer"
 import AIInsights from "@/components/dashboard/ai-insights"
 import ProjectTimeline from "@/components/dashboard/project-timeline"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Download, FileImage, Share2 } from "lucide-react"
+import { ArrowLeft, FileImage } from "lucide-react"
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+
+interface NDVIResult {
+  id: number
+  date: string
+  url: string
+  originalUrl: string
+  ndviMin: number
+  ndviMax: number
+  ndviMean: number
+  healthyPercentage: number
+  stressedPercentage: number
+  unhealthyPercentage: number
+}
 
 export const metadata = {
   title: "Project Details | Farmers NDVI",
@@ -17,7 +32,6 @@ export const metadata = {
 
 export default async function ProjectPage({ params: { id } }: { params: { id: string } }) {
   const projectId = id
-
 
   const res = await fetch(`http://localhost:8000/projects/${projectId}`, {
     next: { revalidate: 10 },
@@ -32,6 +46,14 @@ export default async function ProjectPage({ params: { id } }: { params: { id: st
   }
 
   const project = await res.json()
+
+  // Fetch latest NDVI result for this project
+  const ndviRes = await fetch(`http://localhost:8000/projects/${projectId}/ndvi`, {
+    next: { revalidate: 10 },
+  })
+
+  const ndviData: NDVIResult[] = ndviRes.ok ? await ndviRes.json() : []
+  const latestNDVI = ndviData.length > 0 ? ndviData[0] : null
 
   return (
     <DashboardShell>
@@ -67,12 +89,39 @@ export default async function ProjectPage({ params: { id } }: { params: { id: st
           <TabsTrigger value="history">Project History</TabsTrigger>
         </TabsList>
 
+        {/* Visualization tab */}
         <TabsContent value="visualization" className="space-y-6">
+
+          {/* {latestNDVI && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Latest NDVI Summary</CardTitle>
+                <CardDescription>Generated on {latestNDVI.date}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p><strong>NDVI Mean:</strong> {latestNDVI.ndviMean.toFixed(2)}</p>
+                <p><strong>NDVI Min:</strong> {latestNDVI.ndviMin.toFixed(2)}</p>
+                <p><strong>NDVI Max:</strong> {latestNDVI.ndviMax.toFixed(2)}</p>
+                <Separator className="my-2" />
+                <div className="grid grid-cols-3 gap-2">
+                  <div><strong>Healthy:</strong> {latestNDVI.healthyPercentage}%</div>
+                  <div><strong>Stressed:</strong> {latestNDVI.stressedPercentage}%</div>
+                  <div><strong>Unhealthy:</strong> {latestNDVI.unhealthyPercentage}%</div>
+                </div>
+              </CardContent>
+            </Card>
+          )} */}
+
+          {/* Your existing image toggle */}
           <NDVIViewer projectId={projectId} />
         </TabsContent>
+
+        {/* AI Insights tab */}
         <TabsContent value="insights">
           <AIInsights projectId={projectId} />
         </TabsContent>
+
+        {/* History tab */}
         <TabsContent value="history">
           <ProjectTimeline projectId={projectId} />
         </TabsContent>

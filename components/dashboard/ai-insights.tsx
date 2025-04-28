@@ -26,6 +26,9 @@ interface AIInsightsProps {
 export default function AIInsights({ projectId }: AIInsightsProps) {
   const [loading, setLoading] = useState(false)
   const [recommendation, setRecommendation] = useState<string | null>(null)
+  const [ndviStats, setNdviStats] = useState<any>(null)
+  const [pestClasses, setPestClasses] = useState<string[]>([])
+  const [weatherSummary, setWeatherSummary] = useState<string | null>(null)
 
   const fetchCoordinates = async (location: string) => {
     const res = await fetch(`http://localhost:8000/geocode?location=${encodeURIComponent(location)}`);
@@ -43,7 +46,6 @@ export default function AIInsights({ projectId }: AIInsightsProps) {
   const fetchAndRunAI = async () => {
     setLoading(true)
     try {
-      // Get project location
       const projectRes = await fetch(`http://localhost:8000/projects/${projectId}`)
       const projectData = await projectRes.json()
 
@@ -53,7 +55,7 @@ export default function AIInsights({ projectId }: AIInsightsProps) {
       }
 
       const payload = {
-        image_key: projectData.latest_image_key || "", // ensure this is set server-side
+        image_key: projectData.latest_image_key || "",
         coordinates: coords,
         user_id: "demo_user",
       }
@@ -65,7 +67,20 @@ export default function AIInsights({ projectId }: AIInsightsProps) {
       })
 
       const aiData = await aiRes.json()
-      setRecommendation(aiData.recommendation?.advice || aiData.recommendation || "No insights available.")
+      const output = aiData?.result;
+
+      console.log("AI Result:", output);
+
+      setRecommendation(output?.recommendation?.advice || "No insights available.")
+      setNdviStats(output?.ndvi_result?.ndvi_summary || null)
+      setPestClasses(output?.yolo_result?.class_labels || [])
+      setWeatherSummary(
+        output?.weather_data?.current?.temp
+          ? `${output.weather_data.current.temp}, Wind: ${output.weather_data.current.wind}`
+          : null
+      )
+
+
     } catch (error) {
       console.error("AI Insights Error:", error)
       setRecommendation("Failed to load insights.")
@@ -102,29 +117,79 @@ export default function AIInsights({ projectId }: AIInsightsProps) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="md:col-span-2 lg:col-span-3">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Zap className="mr-2 h-5 w-5 text-[#efc87d]" />
-              AI Recommendations
-            </CardTitle>
-            <CardDescription>
-              Actionable steps based on analysis
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">
-              {recommendation || "Loading AI recommendation..."}
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full bg-[#4f531f] hover:bg-[#3a3d17] text-white">
-              Apply Recommendations
-            </Button>
-          </CardFooter>
-        </Card>
+      {/* New Insights Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+        {/* NDVI Stats */}
+        {ndviStats && (
+          <Card>
+            <CardHeader>
+              <CardTitle>NDVI Stats</CardTitle>
+              <CardDescription>Vegetation Health Overview</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <p>Min: {ndviStats.min}</p>
+              <p>Max: {ndviStats.max}</p>
+              <p>Mean: {ndviStats.mean}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pest Detection */}
+        {pestClasses.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Detected Pests</CardTitle>
+              <CardDescription>Top Threats Identified</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <ul className="list-disc list-inside">
+                {pestClasses.slice(0, 5).map((pest, index) => (
+                  <li key={index}>{pest}</li>
+                ))}
+              </ul>
+              {pestClasses.length > 5 && (
+                <p className="text-xs mt-2">+{pestClasses.length - 5} more pests</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Weather */}
+        {weatherSummary && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Weather</CardTitle>
+              <CardDescription>Field Conditions</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <p>{weatherSummary}</p>
+            </CardContent>
+          </Card>
+        )}
+
       </div>
+
+      {/* Recommendation Section */}
+      <Card className="md:col-span-2 lg:col-span-3">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center">
+            <Zap className="mr-2 h-5 w-5 text-[#efc87d]" />
+            AI Recommendations
+          </CardTitle>
+          <CardDescription>Actionable steps based on analysis</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground whitespace-pre-line">
+            {recommendation || "Loading AI recommendation..."}
+          </p>
+        </CardContent>
+        <CardFooter>
+          <Button className="w-full bg-[#4f531f] hover:bg-[#3a3d17] text-white">
+            Apply Recommendations
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

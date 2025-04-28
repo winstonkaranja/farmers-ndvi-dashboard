@@ -7,6 +7,7 @@ from shapely.geometry import box
 import traceback
 from PIL import Image
 import tifffile as tiff
+from urllib.parse import urlparse
 
 
 def read_multispectral_image(image_path):
@@ -110,23 +111,7 @@ def simple_tiff_to_jpeg(tiff_path, jpeg_path):
     img.save(jpeg_path, "JPEG", quality=95)
 
     
-# def convert_to_rgb_jpeg(tif_path, output_jpeg_path, red_band=3, green_band=2, blue_band=1):
-#     with rasterio.open(tif_path) as src:
-#         # Read bands
-#         red = src.read(red_band + 1)
-#         green = src.read(green_band + 1)
-#         blue = src.read(blue_band + 1)
-
-#         # Normalize to 0-255
-#         def normalize(band):
-#             band = band.astype(np.float32)
-#             band_min, band_max = np.percentile(band, (2, 98))  # Robust stretching
-#             band = (band - band_min) / (band_max - band_min)
-#             band = np.clip(band * 255, 0, 255).astype(np.uint8)
-#             return band
-
-#         rgb = np.stack([normalize(red), normalize(green), normalize(blue)], axis=-1)
-
-#         # Save as JPEG
-#         img = Image.fromarray(rgb)
-#         img.save(output_jpeg_path)
+def extract_s3_key_from_url(url: str) -> str:
+    """Given a full S3 URL, extract the S3 object key"""
+    parsed = urlparse(url)
+    return parsed.path.lstrip("/")

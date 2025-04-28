@@ -30,14 +30,19 @@ class Project(Base):
 
 class NDVIResult(Base):
     __tablename__ = "ndvi_results"
+
     id = Column(Integer, primary_key=True, index=True)
-    filename = Column(String)
-    s3_url = Column(String)
-    original_url = Column(String, nullable=True)
+    filename = Column(String, nullable=False)
+    s3_url = Column(String, nullable=False)             
+    original_url = Column(String, nullable=False)       
+    tiff_url = Column(String, nullable=True)             
+
     ndvi_min = Column(Float)
     ndvi_max = Column(Float)
     ndvi_mean = Column(Float)
+
     raster_extent = Column(Geometry("POLYGON"))
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime)
     project_id = Column(Integer, ForeignKey("projects.id"))
+    
     project = relationship("Project", back_populates="ndvi_results")

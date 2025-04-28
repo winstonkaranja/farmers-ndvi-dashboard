@@ -24,6 +24,20 @@ interface NDVIViewerProps {
   projectId: string
 }
 
+function s3PathToHttpUrl(s3Path: string) {
+  if (!s3Path.startsWith("s3://")) return s3Path
+  const parts = s3Path.replace("s3://", "").split("/")
+  const bucket = parts.shift()
+  const key = parts.join("/")
+  return `https://${bucket}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${key}`
+}
+
+function extractImageKey(url: string) {
+  const parts = url.split(".amazonaws.com/")
+  return parts.length > 1 ? parts[1] : url
+}
+
+
 export default function NDVIViewer({ projectId }: NDVIViewerProps) {
   const [zoom, setZoom] = useState(100)
   const [showOriginal, setShowOriginal] = useState(false)
@@ -39,15 +53,46 @@ export default function NDVIViewer({ projectId }: NDVIViewerProps) {
       try {
         const res = await fetch(`http://localhost:8000/projects/${projectId}/ndvi`)
         const data = await res.json()
-        setNdviImages(data)
-        console.log("NDVI Data:", data)
+  
+        // ✅ Fetch AI insights
+        const aiRes = await fetch("http://localhost:8000/ai-insights", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            coordinates: { latitude: 0, longitude: 0 }, // 🛠 replace if you have coords
+            image_key: data.length > 0 ? extractImageKey(data[0].url) : "",
+            user_id: "demo_user",
+          }),
+        })
+        const aiData = await aiRes.json()
+        console.log("Fetched AI Data:", aiData)
+  
+        // ✅ If MARS returned new NDVI image
+        const aiNdviPath = aiData?.ndvi_result?.save_path
+        let updatedData = data
+  
+        if (aiNdviPath) {
+          const ai_ndvi_url = s3PathToHttpUrl(aiNdviPath)
+  
+          // Update the first NDVI entry
+          updatedData = data.map((item, index) => {
+            if (index === 0) {
+              return { ...item, url: ai_ndvi_url }
+            }
+            return item
+          })
+        }
+  
+        setNdviImages(updatedData)
       } catch (err) {
-        console.error("Failed to fetch NDVI images:", err)
+        console.error("Failed to fetch NDVI images or AI insights:", err)
       }
     }
-
+  
     fetchNDVI()
   }, [projectId])
+  
+  
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % ndviImages.length)
