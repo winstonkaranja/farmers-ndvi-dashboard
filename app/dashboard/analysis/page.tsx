@@ -1,3 +1,5 @@
+'use client';
+
 import type { Metadata } from "next"
 import DashboardShell from "@/components/dashboard/dashboard-shell"
 import DynamicNDVIAnalysis from "@/components/dashboard/dynamic-ndvi-analysis"
