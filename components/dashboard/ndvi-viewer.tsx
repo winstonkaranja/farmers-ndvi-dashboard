@@ -25,12 +25,13 @@ interface NDVIViewerProps {
 }
 
 function s3PathToHttpUrl(s3Path: string) {
-  if (!s3Path.startsWith("s3://")) return s3Path
-  const parts = s3Path.replace("s3://", "").split("/")
-  const bucket = parts.shift()
-  const key = parts.join("/")
-  return `https://${bucket}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${key}`
+  if (!s3Path.startsWith("s3://")) return s3Path;
+  const parts = s3Path.replace("s3://", "").split("/");
+  const bucket = parts.shift();
+  const key = parts.join("/");
+  return `https://${bucket}.s3.eu-north-1.amazonaws.com/${key}`;
 }
+
 
 function extractImageKey(url: string) {
   const parts = url.split(".amazonaws.com/")
@@ -45,55 +46,71 @@ export default function NDVIViewer({ projectId }: NDVIViewerProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [loading, setLoading] = useState(false)
   const [ndviImages, setNdviImages] = useState<any[]>([])
+  const [boundingBoxes, setBoundingBoxes] = useState<any[]>([])
+
 
   const currentImage = ndviImages.length > 0 ? ndviImages[currentImageIndex] : null
 
   useEffect(() => {
     const fetchNDVI = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/projects/${projectId}/ndvi`)
-        const data = await res.json()
+        const res = await fetch(`http://localhost:8000/projects/${projectId}/ndvi`);
+        const data = await res.json();
   
-        // ✅ Fetch AI insights
+        // Fetch AI insights using latest image_key
         const aiRes = await fetch("http://localhost:8000/ai-insights", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            coordinates: { latitude: 0, longitude: 0 }, // 🛠 replace if you have coords
+            coordinates: { latitude: 0, longitude: 0 }, // Replace if you have real coords
             image_key: data.length > 0 ? extractImageKey(data[0].url) : "",
             user_id: "demo_user",
           }),
-        })
-        const aiData = await aiRes.json()
-        console.log("Fetched AI Data:", aiData)
+        });
   
-        // ✅ If MARS returned new NDVI image
-        const aiNdviPath = aiData?.ndvi_result?.save_path
-        let updatedData = data
+        const aiData = await aiRes.json();
+        const aiResult = aiData?.result;
   
-        if (aiNdviPath) {
-          const ai_ndvi_url = s3PathToHttpUrl(aiNdviPath)
+        console.log("🔍 AI Full Result:", aiResult);
   
-          // Update the first NDVI entry
+        // ✅ Use NDVI result path (should be a JPEG)
+        const aiSavePath = aiResult?.yolo_result?.save_path;
+  
+        console.log("🧠 Extracted NDVI JPEG path:", aiSavePath);
+  
+        // Extract and store bounding boxes (if present)
+        const boxes = aiResult?.yolo_result?.bounding_boxes || [];
+        setBoundingBoxes(boxes);
+  
+        let updatedData = data;
+  
+        // ✅ If AI returned a .jpg NDVI result, override the first image
+        if (aiSavePath && aiSavePath.endsWith(".jpg")) {
+          const key = aiSavePath.replace("s3://ndvi-images-bucket/", "");
+          const jpgUrl = `https://ndvi-images-bucket.s3.eu-north-1.amazonaws.com/${key}`;
+  
+          console.log("✅ Final NDVI image override:", jpgUrl);
+  
           updatedData = data.map((item, index) => {
             if (index === 0) {
-              return { ...item, url: ai_ndvi_url }
+              console.log("🔄 Overriding index 0 NDVI with:", jpgUrl);
+              return { ...item, url: jpgUrl };
             }
-            return item
-          })
+            return item;
+          });
         }
   
-        setNdviImages(updatedData)
+        console.log("🖼️ Final NDVI image URLs:", updatedData);
+        setNdviImages(updatedData);
       } catch (err) {
-        console.error("Failed to fetch NDVI images or AI insights:", err)
+        console.error("❌ Failed to fetch NDVI images or AI insights:", err);
       }
-    }
+    };
   
-    fetchNDVI()
-  }, [projectId])
+    fetchNDVI();
+  }, [projectId]);
   
   
-
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % ndviImages.length)
   }
@@ -108,6 +125,14 @@ export default function NDVIViewer({ projectId }: NDVIViewerProps) {
       setLoading(false)
     }, 2000)
   }
+  
+  if (currentImage) {
+    console.log("🖼️ Rendered Image URL:", showOriginal ? currentImage.originalUrl : currentImage.url)
+    console.log("showOriginal =", showOriginal)
+    console.log("currentImage =", currentImage)
+    console.log("🚨 currentImage.url =", currentImage?.url)
+  }
+  
 
   return (
     <div className="space-y-4">
@@ -215,24 +240,32 @@ export default function NDVIViewer({ projectId }: NDVIViewerProps) {
             transition: "transform 0.2s ease-in-out",
           }}
         >
+          
           {currentImage ? (
+            <div className="relative w-full">
             <img
               src={showOriginal ? currentImage.originalUrl : currentImage.url}
               alt={showOriginal ? "Original TIFF" : "NDVI Visualization"}
               className="max-w-full h-auto"
-              style={{
-                filter:
-                  !showOriginal && colorMap === "inferno"
-                    ? "hue-rotate(60deg)"
-                    : colorMap === "plasma"
-                      ? "hue-rotate(120deg)"
-                      : colorMap === "magma"
-                        ? "hue-rotate(180deg)"
-                        : colorMap === "cividis"
-                          ? "hue-rotate(240deg)"
-                          : "none",
-              }}
             />
+          
+            {!showOriginal &&
+              boundingBoxes.map((box, idx) => (
+                <div
+                  key={idx}
+                  className="absolute border-2 border-red-500 bg-red-500/10 text-xs text-white"
+                  style={{
+                    left: `${box.x}px`,
+                    top: `${box.y}px`,
+                    width: `${box.width}px`,
+                    height: `${box.height}px`,
+                  }}
+                  title={box.label || "Detected Object"}
+                >
+                  <span className="absolute top-0 left-0 bg-black/60 px-1">{box.label}</span>
+                </div>
+              ))}
+          </div>          
           ) : (
             <img
               src="/placeholder.svg"
@@ -241,7 +274,6 @@ export default function NDVIViewer({ projectId }: NDVIViewerProps) {
             />
           )}
 
-          {/* ✅ MISSING CLOSING TAG FIXED HERE */}
           <Button
             variant="ghost"
             size="icon"
