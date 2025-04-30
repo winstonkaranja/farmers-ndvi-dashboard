@@ -294,8 +294,10 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
     latest_image_key = None
 
     if latest_ndvi:
-        if latest_ndvi.tiff_url and (latest_ndvi.tiff_url.endswith(".tif") or latest_ndvi.tiff_url.endswith(".tiff")):
+        if latest_ndvi.tiff_url:
             latest_image_key = extract_s3_key_from_url(latest_ndvi.tiff_url)
+        elif latest_ndvi.s3_url:
+            latest_image_key = extract_s3_key_from_url(latest_ndvi.s3_url)
 
     return {
         "id": project.id,
