@@ -38,6 +38,7 @@ export default function AIInsights({ projectId }: AIInsightsProps) {
   const [pestClasses, setPestClasses] = useState<string[]>([])
   const [weatherSummary, setWeatherSummary] = useState<string | null>(null)
   const [ndviImageUrl, setNdviImageUrl] = useState<string | null>(null)
+  const [yoloImageUrl, setYoloImageUrl] = useState<string | null>(null)
 
   const fetchCoordinates = async (location: string) => {
     const res = await fetch(`http://localhost:8000/geocode?location=${encodeURIComponent(location)}`);
@@ -97,11 +98,17 @@ export default function AIInsights({ projectId }: AIInsightsProps) {
           : null
       )
 
-      const jpgPath = output?.ndvi_result?.save_path || output?.yolo_result?.save_path
-      if (jpgPath?.endsWith(".jpg")) {
-        setNdviImageUrl(s3ToHttpUrl(jpgPath))
-        console.log("NDVI image URL:", s3ToHttpUrl(jpgPath));
+      const ndviJpg = output?.ndvi_result?.save_path
+      const yoloJpg = output?.yolo_result?.save_path
+      
+      if (ndviJpg?.endsWith(".jpg")) {
+        setNdviImageUrl(s3ToHttpUrl(ndviJpg))
       }
+      
+      if (yoloJpg?.endsWith(".jpg")) {
+        setYoloImageUrl(s3ToHttpUrl(yoloJpg))
+      }
+      
 
 
     } catch (error) {
@@ -184,18 +191,32 @@ export default function AIInsights({ projectId }: AIInsightsProps) {
         )}
       </div>
 
-      {/* {ndviImageUrl ? (
+      {ndviImageUrl && (
         <div>
           <h3 className="font-semibold mb-2">NDVI Visualization</h3>
           <img
             src={ndviImageUrl}
-            alt="NDVI Preview"
-            className="w-full max-w-2xl border rounded shadow"
+            alt="NDVI Result"
+            className="w-full max-w-2xl border rounded shadow mb-6"
           />
         </div>
-      ) : (
+      )}
+
+      {yoloImageUrl && (
+        <div>
+          <h3 className="font-semibold mb-2">Pest Detection Result</h3>
+          <img
+            src={yoloImageUrl}
+            alt="YOLO Result"
+            className="w-full max-w-2xl border rounded shadow mb-6"
+          />
+        </div>
+      )}
+
+      {!ndviImageUrl && !yoloImageUrl && (
         <p className="text-muted-foreground">No NDVI or pest image available for this project.</p>
-      )} */}
+      )}
+
 
 
       <Card className="md:col-span-2 lg:col-span-3">

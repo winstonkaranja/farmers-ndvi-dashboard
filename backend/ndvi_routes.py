@@ -224,6 +224,194 @@ async def process_ndvi(
     return results_list
 
 
+# @router.post("/projects/{project_id}/ndvi-process")
+# async def process_ndvi(
+#     project_id: int,
+#     files: List[UploadFile] = File(...),
+#     db: Session = Depends(get_db)
+# ):
+#     def s3_to_http_url(s3_path: str) -> str:
+#         return s3_path.replace("s3://ndvi-images-bucket", "https://ndvi-images-bucket.s3.amazonaws.com")
+
+#     results_list = []
+
+#     for file in files:
+#         filename = file.filename.lower()
+
+#         try:
+#             # Save to temp
+#             temp_filename = f"temp_{uuid4().hex}_{file.filename}"
+#             with open(temp_filename, "wb") as f:
+#                 f.write(await file.read())
+
+#             if filename.endswith(".jpg") or filename.endswith(".jpeg"):
+#                 print("Skipping NDVI for JPEG:", filename)
+
+#                 jpeg_s3_filename = f"uploads/{datetime.utcnow().isoformat()}_{file.filename}"
+#                 jpeg_s3_url = upload_to_s3(temp_filename, jpeg_s3_filename)
+
+#                 project = db.query(Project).filter(Project.id == project_id).first()
+#                 if not project:
+#                     raise HTTPException(status_code=404, detail="Project not found")
+
+#                 import httpx
+#                 coords = {"latitude": 0, "longitude": 0}
+#                 if project.location:
+#                     async with httpx.AsyncClient() as client:
+#                         try:
+#                             response = await client.get(f"http://localhost:8000/geocode", params={"location": project.location})
+#                             if response.status_code == 200:
+#                                 coords = response.json()
+#                             else:
+#                                 print("Geocode request failed:", response.text)
+#                         except Exception as e:
+#                             print("Geocode error:", str(e))
+
+#                 ai_payload = {
+#                     "image_key": jpeg_s3_filename,
+#                     "coordinates": coords,
+#                     "user_id": "demo_user"
+#                 }
+#                 ai_result = await run_mars_insights(ai_payload)
+
+#                 ai_image_url = None
+#                 if ai_result and "ndvi_result" in ai_result and "save_path" in ai_result["ndvi_result"]:
+#                     ai_image_url = s3_to_http_url(ai_result["ndvi_result"]["save_path"])
+
+#                 result = NDVIResult(
+#                     filename=file.filename,
+#                     s3_url=jpeg_s3_url,
+#                     original_url=jpeg_s3_url,
+#                     tiff_url=None,
+#                     ndvi_min=0.0,
+#                     ndvi_max=0.0,
+#                     ndvi_mean=0.0,
+#                     raster_extent=None,
+#                     timestamp=datetime.utcnow(),
+#                     project_id=project_id,
+#                 )
+#                 db.add(result)
+#                 db.commit()
+#                 db.refresh(result)
+
+#                 results_list.append({
+#                     "id": result.id,
+#                     "filename": result.filename,
+#                     "ndvi_image_url": result.s3_url,
+#                     "preview_image_url": result.original_url,
+#                     "tiff_url": result.tiff_url,
+#                     "ndvi_min": result.ndvi_min,
+#                     "ndvi_max": result.ndvi_max,
+#                     "ndvi_mean": result.ndvi_mean,
+#                     "timestamp": result.timestamp.isoformat(),
+#                     "ai_insights": ai_result,
+#                     "ai_image_url": ai_image_url
+#                 })
+
+#                 os.remove(temp_filename)
+#                 continue
+
+#             elif filename.endswith(".tif") or filename.endswith(".tiff"):
+#                 print("Calling NDVI pipeline for:", filename)
+#                 ndvi_result = process_ndvi_pipeline(
+#                     ref_image_path=temp_filename,
+#                     target_image_path=temp_filename,
+#                     nir_band_index=3,
+#                     red_band_index=2,
+#                 )
+
+#                 ndvi_path = ndvi_result["ndvi_path"]
+#                 stats = ndvi_result["stats"]
+#                 bounds = ndvi_result["extent"]
+
+#                 jpeg_preview_path = f"preview_{uuid4().hex}.jpg"
+#                 simple_tiff_to_jpeg(temp_filename, jpeg_preview_path)
+
+#                 jpeg_s3_filename = f"previews/{datetime.utcnow().isoformat()}_{file.filename.replace('.tif', '.jpg').replace('.tiff', '.jpg')}"
+#                 jpeg_s3_url = upload_to_s3(jpeg_preview_path, jpeg_s3_filename)
+
+#                 tiff_s3_filename = f"ndvi_results/{datetime.utcnow().isoformat()}_{file.filename}"
+#                 tiff_s3_url = upload_to_s3(temp_filename, tiff_s3_filename)
+
+#                 converted_ndvi_jpeg = f"ndvi_converted_{uuid4().hex}.jpg"
+#                 simple_tiff_to_jpeg(ndvi_path, converted_ndvi_jpeg)
+
+#                 s3_filename = f"ndvi_corrected_results/{datetime.utcnow().isoformat()}_{file.filename.replace('.tif', '.jpg').replace('.tiff', '.jpg')}"
+#                 s3_url = upload_to_s3(converted_ndvi_jpeg, s3_filename)
+
+#                 original_s3_filename = f"originals/{datetime.utcnow().isoformat()}_{file.filename}"
+#                 original_s3_url = upload_to_s3(temp_filename, original_s3_filename)
+
+#                 minx, miny, maxx, maxy = bounds.bounds
+#                 polygon = box(minx, miny, maxx, maxy)
+#                 raster_geom = from_shape(polygon, srid=4326)
+
+#                 project = db.query(Project).filter(Project.id == project_id).first()
+#                 if not project:
+#                     raise HTTPException(status_code=404, detail="Project not found")
+
+#                 import httpx
+#                 coords = {"latitude": 0, "longitude": 0}
+#                 if project.location:
+#                     async with httpx.AsyncClient() as client:
+#                         try:
+#                             response = await client.get("http://localhost:8000/geocode", params={"location": project.location})
+#                             if response.status_code == 200:
+#                                 coords = response.json()
+#                             else:
+#                                 print("Geocode request failed:", response.text)
+#                         except Exception as e:
+#                             print("Geocode error:", str(e))
+
+#                 ai_payload = {
+#                     "image_key": jpeg_s3_filename,
+#                     "coordinates": coords,
+#                     "user_id": "demo_user"
+#                 }
+#                 ai_result = await run_mars_insights(ai_payload)
+
+#                 ai_image_url = None
+#                 if ai_result and "ndvi_result" in ai_result and "save_path" in ai_result["ndvi_result"]:
+#                     ai_image_url = s3_to_http_url(ai_result["ndvi_result"]["save_path"])
+
+#                 result = NDVIResult(
+#                     filename=file.filename,
+#                     s3_url=s3_url,
+#                     original_url=jpeg_s3_url,
+#                     tiff_url=tiff_s3_url,
+#                     ndvi_min=stats["min"],
+#                     ndvi_max=stats["max"],
+#                     ndvi_mean=stats["mean"],
+#                     raster_extent=raster_geom,
+#                     timestamp=datetime.utcnow(),
+#                     project_id=project_id,
+#                 )
+#                 db.add(result)
+#                 db.commit()
+#                 db.refresh(result)
+
+#                 results_list.append({
+#                     "id": result.id,
+#                     "filename": result.filename,
+#                     "ndvi_image_url": result.s3_url,
+#                     "preview_image_url": result.original_url,
+#                     "tiff_url": result.tiff_url,
+#                     "ndvi_min": result.ndvi_min,
+#                     "ndvi_max": result.ndvi_max,
+#                     "ndvi_mean": result.ndvi_mean,
+#                     "timestamp": result.timestamp.isoformat(),
+#                     "ai_insights": ai_result,
+#                     "ai_image_url": ai_image_url
+#                 })
+
+#                 os.remove(temp_filename)
+
+#         except Exception as e:
+#             raise HTTPException(status_code=500, detail=str(e))
+
+#     return results_list
+
+
     
 @router.get("/projects/{project_id}/timeline")
 def get_project_timeline(project_id: int, db: Session = Depends(get_db)):
